@@ -1,13 +1,14 @@
 ﻿Imports System
-Imports System.Text.RegularExpressions
 Imports Discord
 Imports Discord.WebSocket
 
 Module Module1
 	Private _client as DiscordSocketClient
-
+	Private ReadOnly UserActions as Dictionary(of String, Action(Of SocketMessage, DiscordSocketClient)) = New Dictionary(Of String,Action(Of SocketMessage,DiscordSocketClient))()
     Sub Main()
 	    DotNetEnv.Env.Load()
+	    UserActions.Add("!ping", AddressOf Pong)
+	    UserActions.Add("!help", AddressOf Help)
         MainAsync().GetAwaiter().GetResult()
     End Sub
 
@@ -40,16 +41,10 @@ Module Module1
 
 	Private Function MessageCreated(message as SocketMessage) as Task
 		Console.WriteLine($"[{Date.Now()}] -> {message.Author.Username}#{message.Author.Discriminator}: {message.Content}")
-		
-		Dim command As String = message.Content.Split(" ")(0)
-		
-		Select command
-			Case "!ping"
-				message.Channel.SendMessageAsync($"Pong! {_client.Latency}ms")
-			Case "!help"
-				Dim embed As Embed = GenerateEmbed(message.Author, "E que fags")
-				message.Channel.SendMessageAsync(Nothing, False, embed)
-		End Select 
+
+		If UserActions.ContainsKey(message.Content)
+			UserActions(message.Content).Invoke(message, _client)
+		End If
 
 		return Task.CompletedTask
 	End Function
@@ -74,4 +69,13 @@ Module Module1
 		builder.WithColor(Color.Blue)
 		return builder.Build()
 	End Function
+	
+	Private Sub Pong(m As SocketMessage, c As DiscordSocketClient)
+		m.Channel.SendMessageAsync($"Pong! {c.Latency}ms") 
+	End Sub
+	
+	Private Sub Help(m As SocketMessage, c As DiscordSocketClient)
+		Dim embed As Embed = GenerateEmbed(m.Author, "E que fags")
+		m.Channel.SendMessageAsync(Nothing, False, embed)
+	End Sub
 End Module
