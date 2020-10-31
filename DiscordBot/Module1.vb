@@ -1,6 +1,8 @@
 ﻿Imports System
+Imports System.Linq.Expressions
 Imports Discord
 Imports Discord.WebSocket
+Imports Microsoft.CodeAnalysis.CSharp.Scripting
 
 Module Module1
 	Private _client as DiscordSocketClient
@@ -9,6 +11,7 @@ Module Module1
 	    DotNetEnv.Env.Load()
 	    UserActions.Add("!ping", AddressOf Pong)
 	    UserActions.Add("!help", AddressOf Help)
+	    UserActions.Add("!eval", AddressOf Eval)
         MainAsync().GetAwaiter().GetResult()
     End Sub
 
@@ -41,9 +44,9 @@ Module Module1
 
 	Private Function MessageCreated(message as SocketMessage) as Task
 		Console.WriteLine($"[{Date.Now()}] -> {message.Author.Username}#{message.Author.Discriminator}: {message.Content}")
-
-		If UserActions.ContainsKey(message.Content)
-			UserActions(message.Content).Invoke(message, _client)
+		dim key = message.Content.Split(" ")(0)
+		If UserActions.ContainsKey(key)
+			UserActions(key).Invoke(message, _client)
 		End If
 
 		return Task.CompletedTask
@@ -77,5 +80,21 @@ Module Module1
 	Private Sub Help(m As SocketMessage, c As DiscordSocketClient)
 		Dim embed As Embed = GenerateEmbed(m.Author, "E que fags")
 		m.Channel.SendMessageAsync(Nothing, False, embed)
+	End Sub
+	
+	Private Async Sub Eval(m As SocketMessage, c As DiscordSocketClient)
+		If(m.Author.Id = "263073389432930314" or m.Author.Id = "385132696135008259")
+			dim message = Await m.Channel.SendMessageAsync("Loading...")
+			Console.WriteLine("Test")
+			Try
+				await message.ModifyAsync( Sub(msg) msg.Content = Convert.ToString(CSharpScript.EvaluateAsync(m.Content.Substring(6)).Result))
+			Catch ex As Exception 
+				message.ModifyAsync( Sub(msg) msg.Content = ex.Message)
+			End Try
+		End If
+	End Sub
+	
+	Private Sub ChangeMessage(msg as MessageProperties)
+		msg.Content = "Test"
 	End Sub
 End Module
