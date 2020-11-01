@@ -1,6 +1,11 @@
-﻿Imports Discord
+﻿Imports System.IO
+Imports Discord
 Imports Discord.WebSocket
 Imports Microsoft.CodeAnalysis.CSharp.Scripting
+Imports System.Math
+Imports System.Runtime.InteropServices
+Imports System.Text.RegularExpressions
+Imports Microsoft.CodeAnalysis.Scripting
 
 Public Module Commands
   Public Sub Ping(m As SocketMessage, c As DiscordSocketClient)
@@ -16,9 +21,30 @@ Public Module Commands
     If(AdminUsers.Values.Contains(m.Author.Id))
       dim message = Await m.Channel.SendMessageAsync("Loading...")
       Try
-        await message.ModifyAsync( Sub(msg) msg.Content = Convert.ToString(CSharpScript.EvaluateAsync(m.Content.Substring(6)).Result))
+        dim command = m.Content.Substring(6)
+        Console.WriteLine(command)
+        dim _imports as List (Of String) = New List(Of String)()
+        dim newCommand as String = ""
+        Dim reader = new StringReader(command)
+        While True
+          Dim line = reader.ReadLine()
+          If line is Nothing
+            Exit While
+          Else
+            if line.Contains("using")
+              dim l = line
+              l = l.Replace("using ", "")
+              l = l.Replace(";", "")
+              _imports.Add(l)
+            Else
+              newCommand += line
+            End If
+          End If
+        End While
+        await message.ModifyAsync( Sub(msg) msg.Content = Convert.ToString(CSharpScript.EvaluateAsync(newCommand ,ScriptOptions.Default.WithImports(_imports.ToArray())).Result))
       Catch ex As Exception
         message.ModifyAsync( Sub(msg) msg.Content = ex.Message)
+
       End Try
     Else
       Await m.Channel.SendMessageAsync("User is not allowed to run this command.")
