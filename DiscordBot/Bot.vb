@@ -15,7 +15,7 @@ Module Module1
     for Each pair in AdminUsers
       Console.WriteLine($"{pair.Key}#{pair.Value}")
     Next
-	  UserActions.Add("ping", AddressOf Commands.Ping)
+	  UserActions.Add("ping", AddressOf Ping)
 	  UserActions.Add("help", AddressOf Help)
 	  UserActions.Add("eval", AddressOf Eval)
 	  UserActions.Add("addamin", AddressOf AddAdmin)
